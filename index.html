@@ -1,13 +1,678 @@
 <!DOCTYPE html>
-<html>
-  <head><title>Math Class</title></head>
-  <body>
-    <h1>Welcome</h1>
-    <ul>
-      <li><a href="/framework">Evaluative Framework for AI Applications in Education</a></li>
-      <li><a href="/middlesex-choice-boards">Choice Boards</a></li>
-      <li><a href="/ap-statistics-reference">AP Statistics Reference</a></li>
-      <li><a href="/inference-with-inference">AP Statistics Inference Activity</a></li>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mathclass.today</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #f5f3ee;
+      --ink:       #141210;
+      --ink-muted: #6b6560;
+      --ink-faint: #b0aba4;
+      --accent:    #b5121b;
+      --border:    #d9d4cd;
+      --card-bg:   #ffffff;
+      --serif: 'Playfair Display', Georgia, serif;
+      --mono:  'DM Mono', monospace;
+      --sans:  'DM Sans', sans-serif;
+      --learner: #b5121b;
+      --teacher: #1a4f7a;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--sans);
+      font-weight: 300;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 3.5rem;
+      height: 54px;
+      background: rgba(245,243,238,0.92);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      color: var(--ink);
+      text-decoration: none;
+    }
+    .nav-logo span { color: var(--accent); }
+    .nav-links { display: flex; gap: 2.25rem; list-style: none; }
+    .nav-links a {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      font-weight: 400;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+      text-decoration: none;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--accent); }
+    .nav-tagline {
+      font-family: var(--mono);
+      font-size: 0.64rem;
+      font-weight: 400;
+      letter-spacing: 0.08em;
+      color: var(--ink-faint);
+    }
+
+    /* ── MAIN ── */
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+
+    /* ── HERO TEXT ── */
+    .hero {
+      padding: calc(54px + 5rem) 0 3.5rem;
+      animation: fadeUp 0.85s ease both;
+    }
+
+    .byline {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      font-weight: 400;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+      margin-bottom: 1.25rem;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      text-decoration-color: var(--border);
+      width: fit-content;
+      transition: color 0.2s;
+    }
+    .byline:hover { color: var(--ink); }
+
+    h1 {
+      font-family: var(--serif);
+      font-weight: 900;
+      font-size: clamp(2.6rem, 5vw, 4rem);
+      line-height: 1.02;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      margin-bottom: 1.5rem;
+    }
+    h1 em { font-style: italic; color: var(--accent); }
+
+    .hero-desc {
+      font-size: 1rem;
+      font-weight: 300;
+      color: var(--ink-muted);
+      max-width: 58ch;
+      line-height: 1.8;
+    }
+
+    /* ── JUMP LINKS ── */
+    .jump-list {
+      border-top: 1px solid var(--border);
+      animation: fadeUp 0.85s 0.1s ease both;
+    }
+
+    .jump-item { border-bottom: 1px solid var(--border); }
+
+    .audience-jump {
+      width: 100%;
+      padding: 1.6rem 0;
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      cursor: pointer;
+      background: none;
+      border: none;
+      text-align: left;
+      transition: opacity 0.15s;
+    }
+    .audience-jump:hover { opacity: 0.7; }
+    .audience-jump.active { opacity: 1; }
+
+    .jump-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      transition: transform 0.2s;
+    }
+    .audience-jump.active .jump-dot { transform: scale(1.5); }
+
+    .jump-label {
+      font-family: var(--serif);
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--ink);
+      flex: 1;
+    }
+    .jump-sub {
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.08em;
+      color: var(--ink-faint);
+    }
+    .jump-arrow {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--ink-faint);
+      transition: transform 0.35s cubic-bezier(0.25, 0.8, 0.25, 1), color 0.2s;
+      flex-shrink: 0;
+    }
+    .audience-jump.active .jump-arrow {
+      transform: rotate(180deg);
+      color: var(--ink);
+    }
+
+    /* ── EXPANDING PANELS ── */
+    .aud-panel {
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height 0.48s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+    .aud-panel.open {
+      max-height: 3000px;
+    }
+
+    .panel-inner {
+      padding-bottom: 2.5rem;
+    }
+
+    /* ── TOOL GRID ── */
+    .tools-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+    }
+
+    .tool-card {
+      background: var(--card-bg);
+      padding: 1.75rem 1.75rem 1.5rem;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      gap: 0.7rem;
+      position: relative;
+      overflow: hidden;
+      transition: background 0.2s;
+      min-height: 190px;
+    }
+    .tool-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 2px;
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.28s ease;
+    }
+    .tool-card:hover { background: #fdfcfb; }
+    .tool-card:hover::after { transform: scaleX(1); }
+    .lrn-card::after { background: var(--learner); }
+    .tch-card::after { background: var(--teacher); }
+
+    .tool-tag {
+      font-family: var(--mono);
+      font-size: 0.59rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+    .lrn-tag { color: var(--learner); }
+    .tch-tag { color: var(--teacher); }
+
+    .tool-title {
+      font-family: var(--serif);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--ink);
+      line-height: 1.2;
+    }
+    .tool-desc {
+      font-size: 0.82rem;
+      font-weight: 300;
+      color: var(--ink-muted);
+      line-height: 1.65;
+      flex: 1;
+    }
+    .tool-arrow {
+      font-family: var(--mono);
+      font-size: 0.63rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      color: var(--ink);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-top: 0.1rem;
+      transition: gap 0.2s;
+    }
+    .tool-card:hover .tool-arrow { gap: 0.65rem; }
+
+    .tool-card.soon {
+      background: #faf9f7;
+      pointer-events: none;
+    }
+    .tool-card.soon::after { display: none; }
+    .soon-badge {
+      font-family: var(--mono);
+      font-size: 0.57rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      border: 1px solid var(--border);
+      padding: 0.18rem 0.5rem;
+      width: fit-content;
+      margin-top: auto;
+    }
+
+    /* ── ABOUT CARD ── */
+    .about-card {
+      display: flex;
+      gap: 2rem;
+      align-items: flex-start;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      padding: 2rem 2.25rem;
+      max-width: 780px;
+    }
+
+    .about-avatar-col {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .about-avatar {
+      width: 68px; height: 68px;
+      border-radius: 50%;
+      background: #eeedf8;
+      border: 1px solid #ccc9ee;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #534AB7;
+      letter-spacing: 0.05em;
+    }
+
+    .about-badges {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      align-items: center;
+    }
+
+    .about-badge {
+      font-family: var(--mono);
+      font-size: 0.58rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.6rem;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+    .badge-dept { color: #534AB7; background: #eeedf8; }
+    .badge-ai   { color: #0F6E56; background: #E1F5EE; }
+
+    .about-content { flex: 1; min-width: 0; }
+
+    .about-name-row { margin-bottom: 1rem; }
+
+    .about-name {
+      font-family: var(--serif);
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--ink);
+      line-height: 1.2;
+      margin-bottom: 0.2rem;
+    }
+
+    .about-meta {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.04em;
+      color: var(--ink-muted);
+    }
+
+    .about-p {
+      font-size: 0.88rem;
+      font-weight: 300;
+      color: var(--ink-muted);
+      line-height: 1.8;
+      margin-bottom: 0.75rem;
+    }
+    .about-p:last-child { margin-bottom: 0; }
+
+    @media (max-width: 600px) {
+      .about-card { flex-direction: column; }
+      .about-avatar-col { flex-direction: row; align-items: center; }
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 1.75rem 2rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .footer-logo {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--ink-muted);
+    }
+    .footer-logo span { color: var(--accent); }
+    .footer-note {
+      font-family: var(--mono);
+      font-size: 0.64rem;
+      color: var(--ink-faint);
+      letter-spacing: 0.05em;
+    }
+
+    /* ── COURSE GROUPS ── */
+    .course-group { margin-bottom: 2.5rem; }
+    .course-group:last-child { margin-bottom: 0; }
+
+    .course-heading {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      padding: 0 0 0.75rem 0;
+      margin-bottom: 0;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .course-heading::before {
+      content: '';
+      display: inline-block;
+      width: 1.25rem;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── ANIMATION ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 700px) {
+      nav { padding: 0 1.25rem; }
+      .nav-links { display: none; }
+      main { padding: 0 1.25rem; }
+      .tools-grid { grid-template-columns: 1fr; }
+      .about-grid { grid-template-columns: 1fr; gap: 2rem; }
+      footer { padding: 1.5rem 1.25rem; flex-direction: column; gap: 0.5rem; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a class="nav-logo" href="#"><span>math</span>class.today</a>
+    <ul class="nav-links">
+      <li><a onclick="togglePanel('learners')">For Learners</a></li>
+      <li><a onclick="togglePanel('teachers')">For Teachers</a></li>
+      <li><a onclick="togglePanel('about')">About</a></li>
     </ul>
-  </body>
+    <div class="nav-tagline">Tools for today's classrooms.</div>
+  </nav>
+
+  <main>
+
+    <!-- HERO -->
+    <div class="hero">
+      <div class="byline" onclick="togglePanel('about')">Mike Harrington</div>
+      <h1>A <em>Working</em> Collection</h1>
+      <p class="hero-desc">
+        Tools and resources from my ongoing exploration of math teaching and AI in education. Some are polished. Some are still evolving. All of them started as something I actually needed — tools for today's classrooms, built one problem at a time.
+      </p>
+    </div>
+
+    <!-- JUMP LINKS + PANELS -->
+    <div class="jump-list">
+
+      <!-- LEARNERS -->
+      <div class="jump-item">
+        <button class="audience-jump" id="jump-learners" onclick="togglePanel('learners')">
+          <div class="jump-dot" style="background:var(--learner);"></div>
+          <div class="jump-label">For Learners</div>
+          <div class="jump-sub">3 tools</div>
+          <div class="jump-arrow">↓</div>
+        </button>
+        <div class="aud-panel" id="panel-learners">
+          <div class="panel-inner">
+
+            <!-- AP Statistics -->
+            <div class="course-group">
+              <div class="course-heading">AP Statistics</div>
+              <div class="tools-grid">
+
+                <a href="/inference-with-inference" class="tool-card lrn-card">
+                  <div class="tool-title">Inference Practice</div>
+                  <div class="tool-desc">AI-powered scenario practice using the State–Plan–Do–Conclude framework. Structured feedback at each step — you can't skip to the end.</div>
+                  <div class="tool-arrow">Open →</div>
+                </a>
+				<a href="/middlesex-choice-boards/boards/ap-stats-inference-board.html" class="tool-card lrn-card">
+                  <div class="tool-title">AP Statistics Inference Review Choice Board</div>
+                  <div class="tool-desc">Students choose their own practice path with a structured set of options. Encouraging student agency and ownership of their learning.</div>
+                  <div class="tool-arrow">Open →</div>
+                </a>
+                <a href="/ap-statistics-reference" class="tool-card lrn-card">
+                  <div class="tool-title">AP Statistics Reference</div>
+                  <div class="tool-desc">An interactive version of the College Board formula sheet with MathJax rendering and animated distribution tables. Built for real exam prep.</div>
+                  <div class="tool-arrow">Open →</div>
+                </a>
+
+              </div>
+            </div>
+			
+            <!-- BC calc -->
+            <div class="course-group">
+              <div class="course-heading">BC Calculus</div>
+              <div class="tools-grid">
+
+                <a href="/middlesex-choice-boards" class="tool-card lrn-card">
+                  <div class="tool-title">Choice Boards</div>
+                  <div class="tool-desc">Topic-by-Topic choice boards across all curriculum units. Students choose their own practice path within a curated, structured set of options.</div>
+                  <div class="tool-arrow">Open →</div>
+                </a>
+
+              </div>
+            </div>
+
+          </div>			
+
+            <!-- Multi-course -->
+            <div class="course-group">
+              <div class="course-heading">AP Stats · BC Calc · More</div>
+              <div class="tools-grid">
+
+                <a href="/middlesex-choice-boards" class="tool-card lrn-card">
+                  <div class="tool-title">Choice Boards</div>
+                  <div class="tool-desc">Topic-by-topic choice boards across multiple courses. Students choose their own practice path within a curated, structured set of options.</div>
+                  <div class="tool-arrow">Open →</div>
+                </a>
+
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- TEACHERS -->
+      <div class="jump-item">
+        <button class="audience-jump" id="jump-teachers" onclick="togglePanel('teachers')">
+          <div class="jump-dot" style="background:var(--teacher);"></div>
+          <div class="jump-label">For Teachers</div>
+          <div class="jump-sub">2 tools + more coming</div>
+          <div class="jump-arrow">↓</div>
+        </button>
+        <div class="aud-panel" id="panel-teachers">
+          <div class="panel-inner">
+
+            <!-- AI Integration -->
+            <div class="course-group">
+              <div class="course-heading">AI Integration</div>
+              <div class="tools-grid">
+
+                <a href="/framework" class="tool-card tch-card">
+                  <div class="tool-title">Evaluative Framework for AI Applications</div>
+                  <div class="tool-desc">A structured framework for evaluating AI tools in educational settings — covering pedagogy, academic integrity, equity, and institutional fit.</div>
+                  <div class="tool-arrow">Open →</div>
+                </a>
+
+                <a href="/reflection-protocol" class="tool-card tch-card">
+                  <div class="tool-title">Reflection Protocol</div>
+                  <div class="tool-desc">A structured reflection tool for processing AI-assisted work. Prompts metacognitive thinking about how AI was used. Useful protocol for students and adults alike.</div>
+                  <div class="tool-arrow">Open →</div>
+                </a>
+
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ABOUT -->
+      <div class="jump-item">
+        <button class="audience-jump" id="jump-about" onclick="togglePanel('about')">
+          <div class="jump-dot" style="background:var(--ink-faint);"></div>
+          <div class="jump-label">About</div>
+          <div class="jump-sub">Mike Harrington</div>
+          <div class="jump-arrow">↓</div>
+        </button>
+        <div class="aud-panel" id="panel-about">
+          <div class="panel-inner">
+            <div class="about-card">
+              <div class="about-avatar-col">
+                <div class="about-avatar">MH</div>
+                <div class="about-badges">
+                  <span class="about-badge badge-dept">Dept. Head</span>
+                  <span class="about-badge badge-ai">AI Task Force</span>
+                </div>
+              </div>
+              <div class="about-content">
+                <div class="about-name-row">
+                  <div class="about-name">Mike Harrington</div>
+                  <div class="about-meta">Mathematics · Middlesex School, Concord MA · since 2012</div>
+                </div>
+                <p class="about-p">I teach mathematics at Middlesex School, where I also chair the AI Task Force and head the Math and Computer Science departments. My classroom spans the full range of high school math — from introductory courses through AP and post-AP — and my ongoing studies keep me close to both the math itself and the evolving research on how students learn it.</p>
+                <p class="about-p">This site is where I think out loud about technology and education — what AI is genuinely doing for students and teachers, where it's helping, and where it's quietly doing harm. I'm writing for practitioners: people who have to make real decisions in real classrooms, not just theorize about them. I hope what's here is useful to students, teachers, and the people responsible for making decisions about how schools use these tools.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end jump-list -->
+
+  </main>
+
+  <!--
+  DECISION MAKERS — commented out for this release, revisit later
+
+  Jump link (add inside .jump-list when ready):
+  <div class="jump-item">
+    <button class="audience-jump" id="jump-admins" onclick="togglePanel('admins')">
+      <div class="jump-dot" style="background:#2d6a4f;"></div>
+      <div class="jump-label">For Decision Makers</div>
+      <div class="jump-sub">Coming soon</div>
+      <div class="jump-arrow">↓</div>
+    </button>
+    <div class="aud-panel" id="panel-admins">
+      <div class="panel-inner">
+        <div class="tools-grid">
+          <div class="tool-card soon">
+            <div class="tool-tag" style="color:#2d6a4f;">Policy &amp; Evaluation</div>
+            <div class="tool-title">AI Policy Toolkit</div>
+            <div class="tool-desc">Decision-support resources for school leaders — helping administrators build principle-based frameworks for AI in the classroom rather than chasing individual tool decisions.</div>
+            <div class="soon-badge">Coming soon</div>
+          </div>
+          <div class="tool-card soon">
+            <div class="tool-tag" style="color:#2d6a4f;">Professional Development</div>
+            <div class="tool-title">Faculty Onboarding Resources</div>
+            <div class="tool-desc">Resources for introducing AI integration to teaching faculty — grounded in pedagogy rather than hype, and built around the questions teachers actually ask.</div>
+            <div class="soon-badge">Coming soon</div>
+          </div>
+          <div class="tool-card soon">
+            <div class="tool-tag" style="color:#2d6a4f;">Get in Touch</div>
+            <div class="tool-title">Have a specific need?</div>
+            <div class="tool-desc">These tools are built from real classroom and institutional questions. If you're a school leader working through a specific challenge around AI, new tools often start as conversations.</div>
+            <div class="soon-badge">Reach out</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  -->
+
+  <footer>
+    <div class="footer-logo"><span>math</span>class.today</div>
+    <div class="footer-note">Tools for today's classrooms.</div>
+  </footer>
+
+  <script>
+    function togglePanel(id) {
+      const panel = document.getElementById('panel-' + id);
+      const jump  = document.getElementById('jump-' + id);
+      const isOpen = panel.classList.contains('open');
+
+      // Close all, deactivate all
+      document.querySelectorAll('.aud-panel').forEach(p => p.classList.remove('open'));
+      document.querySelectorAll('.audience-jump').forEach(j => j.classList.remove('active'));
+
+      if (!isOpen) {
+        panel.classList.add('open');
+        if (jump) jump.classList.add('active');
+        setTimeout(() => {
+          panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 60);
+      }
+    }
+  </script>
+
+</body>
 </html>

@@ -134,22 +134,23 @@ hr.divider { border: none; border-top: 1px solid var(--rule); margin: 20px 0; }
       <div class="section-head">Question 1</div>
       <div class="field">
         <label>In a game tree, a node is labeled <strong>W</strong>. What does this mean?</label>
+        <p style="font-size:12px;font-style:italic;color:var(--ink-faint);margin-bottom:6px;margin-top:2px;">If your first answer turns out to be wrong, take a moment to think through why before changing your selection.</p>
         <div class="options" id="q1-opts">
           <label class="option">
-            <input type="radio" name="q1" value="win">
-            The player whose turn it is at this node can force a win.
+            <input type="radio" name="q1" value="moved">
+            The player who just moved to reach this node has won.
           </label>
           <label class="option">
             <input type="radio" name="q1" value="lose">
             The player whose turn it is at this node will lose with best play.
           </label>
           <label class="option">
-            <input type="radio" name="q1" value="moved">
-            The player who just moved to reach this node has won.
-          </label>
-          <label class="option">
             <input type="radio" name="q1" value="first">
             Player 1 wins from this position regardless of whose turn it is.
+          </label>
+          <label class="option">
+            <input type="radio" name="q1" value="win">
+            The player whose turn it is at this node can force a win.
           </label>
         </div>
       </div>
@@ -159,7 +160,7 @@ hr.divider { border: none; border-top: 1px solid var(--rule); margin: 20px 0; }
     <div class="form-section">
       <div class="section-head">Question 2</div>
       <div class="field">
-        <label>In any two-player combinatorial game with no draws, must one of the players always have a winning strategy?</label>
+        <label>In any two-player game that is finite, deterministic, has perfect information, and no draws — must one of the players always have a winning strategy?</label>
         <div class="options" id="q2-opts">
           <label class="option">
             <input type="radio" name="q2" value="yes">
@@ -253,9 +254,9 @@ hr.divider { border: none; border-top: 1px solid var(--rule); margin: 20px 0; }
     <div class="form-section">
       <div class="section-head">Reflection <span style="font-family:'DM Mono',monospace;font-size:11px;font-weight:400;color:var(--ink-faint)">full credit for any honest response</span></div>
       <div class="field">
-        <label>What would you like more practice with before the assessment?</label>
+        <label>What are you still unsure about heading into the assessment?</label>
         <span class="hint">Be specific — name the game, concept, or skill.</span>
-        <textarea id="q-reflect" placeholder="e.g. I want more practice reading game trees, or describing winning strategies in words..."></textarea>
+        <textarea id="q-reflect" placeholder="e.g. I'm unsure how to label game tree nodes, or I'm not confident describing a winning strategy in words..."></textarea>
       </div>
     </div>
 
@@ -384,6 +385,9 @@ document.getElementById('submit-btn').addEventListener('click', async () => {
   const payload = {
     timestamp:    ts,
     name,
+    earned,
+    total,
+    pct,
     q1_ans:       answers.q1,
     q1_correct:   answers.q1 === CORRECT.q1 ? 'yes' : 'no',
     q2_ans:       answers.q2,

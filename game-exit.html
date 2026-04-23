@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exit Ticket — Game Theory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --crimson: #9B1C31;
+  --crimson-mid: #c0849a;
+  --ink: #1c1c1c;
+  --ink-mid: #555;
+  --ink-faint: #aaa;
+  --rule: #e4e4e0;
+  --surface: #f8f8f6;
+  --white: #fff;
+  --green: #1a6b3c;
+  --green-bg: #eaf5f0;
+  --amber: #7a4e00;
+  --amber-bg: #fdf6e8;
+  --red-bg: #fdf0f1;
+  --navy: #182B49;
+  --wnode-stroke: #166534;
+  --wnode-fill: #f0fdf4;
+  --lnode-stroke: #991b1b;
+  --lnode-fill: #fef2f2;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--surface); color: var(--ink); min-height: 100vh; padding-bottom: 80px; }
+
+.header { background: var(--white); border-bottom: 2.5px solid var(--crimson); padding: 20px 36px; display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+.header-label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faint); }
+.header-title { font-family: 'DM Serif Display', serif; font-size: 24px; color: var(--crimson); }
+
+.container { max-width: 660px; margin: 0 auto; padding: 36px 20px 0; }
+
+/* name row */
+.name-row { margin-bottom: 28px; }
+.name-row label { display: block; font-size: 13px; font-weight: 500; color: var(--ink-mid); margin-bottom: 5px; }
+.input-row { display: flex; align-items: center; gap: 10px; }
+.input-row input[type=text] { flex: 1; }
+
+/* inputs */
+input[type=text], textarea {
+  width: 100%; font-family: 'DM Mono', monospace; font-size: 15px; color: var(--ink);
+  background: var(--white); border: 1px solid var(--rule); border-radius: 6px;
+  padding: 9px 13px; outline: none; transition: border-color 0.15s, background 0.15s;
+}
+textarea { font-family: 'DM Sans', sans-serif; font-size: 14px; resize: vertical; min-height: 80px; }
+input[type=text]:focus, textarea:focus { border-color: var(--crimson-mid); }
+input[type=text].correct { border-color: var(--green); background: var(--green-bg); }
+input[type=text].wrong   { border-color: var(--crimson); background: var(--red-bg); }
+#sname { font-family: 'DM Sans', sans-serif; }
+
+#load-btn { font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; color: var(--white); background: var(--crimson); border: none; border-radius: 6px; padding: 9px 22px; cursor: pointer; transition: background 0.15s; white-space: nowrap; }
+#load-btn:hover { background: #7d1627; }
+
+/* form sections */
+#ticket-body { display: none; }
+.form-section { margin-bottom: 24px; }
+.section-head { font-family: 'DM Serif Display', serif; font-size: 17px; color: var(--ink); border-bottom: 1px solid var(--rule); padding-bottom: 7px; margin-bottom: 16px; display: flex; align-items: baseline; gap: 10px; }
+.field { margin-bottom: 14px; }
+label { display: block; font-size: 13px; font-weight: 500; color: var(--ink-mid); margin-bottom: 5px; line-height: 1.45; }
+.hint { display: block; font-size: 11.5px; font-style: italic; color: var(--ink-faint); margin-top: 2px; }
+
+/* radio options */
+.options { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+.option { display: flex; align-items: center; gap: 10px; padding: 10px 13px; border: 1px solid var(--rule); border-radius: 6px; cursor: pointer; font-size: 14px; transition: background 0.1s, border-color 0.1s; }
+.option:hover { background: var(--surface); border-color: #bbb; }
+.option input[type=radio] { accent-color: var(--crimson); width: 15px; height: 15px; flex-shrink: 0; }
+.option.selected-correct { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+.option.selected-wrong   { background: var(--red-bg);   border-color: var(--crimson); color: var(--crimson); }
+
+/* badge */
+.badge { font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 20px; white-space: nowrap; opacity: 0; transition: opacity 0.2s; pointer-events: none; display: inline-block; }
+.badge.show { opacity: 1; }
+.badge.correct { background: var(--green-bg); color: var(--green); }
+.badge.wrong   { background: var(--red-bg); color: var(--crimson); }
+
+/* divider */
+hr.divider { border: none; border-top: 1px solid var(--rule); margin: 20px 0; }
+
+/* tree diagrams */
+.tree-wrap { display: flex; justify-content: center; margin: 14px 0 10px; }
+
+/* submit */
+.submit-row { margin-top: 10px; }
+#submit-btn { font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; color: var(--white); background: var(--crimson); border: none; border-radius: 6px; padding: 11px 34px; cursor: pointer; transition: background 0.15s, opacity 0.15s; }
+#submit-btn:hover { background: #7d1627; }
+#submit-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* result */
+#result-panel { display: none; margin-top: 28px; border-radius: 8px; padding: 22px 26px; border: 1px solid var(--rule); }
+#result-panel.success { background: var(--green-bg); border-color: #a8d9bc; }
+#result-panel.partial  { background: var(--amber-bg); border-color: #f0ce80; }
+#result-panel.low      { background: var(--red-bg);   border-color: #f0b8be; }
+.result-score { font-family: 'DM Serif Display', serif; font-size: 28px; margin-bottom: 6px; }
+.result-score.success { color: var(--green); }
+.result-score.partial  { color: var(--amber); }
+.result-score.low      { color: var(--crimson); }
+.result-msg { font-size: 14px; line-height: 1.65; color: var(--ink-mid); margin-bottom: 16px; }
+.breakdown { font-size: 13px; line-height: 2; }
+.bd-row { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.bd-qlabel { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--ink-faint); min-width: 160px; }
+.bd-result { font-weight: 500; }
+.bd-result.c { color: var(--green); }
+.bd-result.w { color: var(--crimson); }
+.submit-note { margin-top: 14px; font-size: 12px; font-style: italic; color: var(--ink-faint); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span class="header-label">Middlesex School &nbsp;·&nbsp; Problem Solving</span>
+  <span class="header-title">Exit Ticket — Game Theory</span>
+</div>
+
+<div class="container">
+
+  <div class="name-row">
+    <label for="sname">Enter your name to load the ticket</label>
+    <div class="input-row">
+      <input type="text" id="sname" placeholder="First and last name" autocomplete="off">
+      <button id="load-btn">Load &rarr;</button>
+    </div>
+  </div>
+
+  <div id="ticket-body">
+
+    <!-- Q1 -->
+    <div class="form-section">
+      <div class="section-head">Question 1</div>
+      <div class="field">
+        <label>In a game tree, a node is labeled <strong>W</strong>. What does this mean?</label>
+        <div class="options" id="q1-opts">
+          <label class="option">
+            <input type="radio" name="q1" value="win">
+            The player whose turn it is at this node can force a win.
+          </label>
+          <label class="option">
+            <input type="radio" name="q1" value="lose">
+            The player whose turn it is at this node will lose with best play.
+          </label>
+          <label class="option">
+            <input type="radio" name="q1" value="moved">
+            The player who just moved to reach this node has won.
+          </label>
+          <label class="option">
+            <input type="radio" name="q1" value="first">
+            Player 1 wins from this position regardless of whose turn it is.
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="form-section">
+      <div class="section-head">Question 2</div>
+      <div class="field">
+        <label>In any two-player combinatorial game with no draws, must one of the players always have a winning strategy?</label>
+        <div class="options" id="q2-opts">
+          <label class="option">
+            <input type="radio" name="q2" value="yes">
+            Yes — this is guaranteed by Zermelo's theorem.
+          </label>
+          <label class="option">
+            <input type="radio" name="q2" value="no">
+            No — it's possible that neither player can force a win.
+          </label>
+          <label class="option">
+            <input type="radio" name="q2" value="depends">
+            It depends on the specific game.
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Q3 Trees -->
+    <div class="form-section">
+      <div class="section-head">Question 3 — Game tree mini-problems</div>
+      <div class="field">
+        <label>Label the root node W or L. Will Player 1 win or lose with perfect play?</label>
+      </div>
+
+      <p style="font-size:13px;font-weight:500;color:var(--ink-mid);margin-bottom:8px;">Tree A</p>
+      <div class="tree-wrap">
+        <svg width="280" height="140" viewBox="0 0 280 140" xmlns="http://www.w3.org/2000/svg">
+          <line x1="140" y1="52" x2="50" y2="108" stroke="#d1d5db" stroke-width="1.5"/>
+          <line x1="140" y1="52" x2="140" y2="108" stroke="#d1d5db" stroke-width="1.5"/>
+          <line x1="140" y1="52" x2="230" y2="108" stroke="#d1d5db" stroke-width="1.5"/>
+          <!-- P1 root — larger dashed node -->
+          <ellipse cx="140" cy="30" rx="48" ry="26" fill="#fff" stroke="#182B49" stroke-width="2" stroke-dasharray="5,3"/>
+          <text x="140" y="24" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="10" fill="#6b6560">P1 to move</text>
+          <text x="140" y="38" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="15" font-weight="500" fill="#182B49">?</text>
+          <!-- P2 leaves -->
+          <circle cx="50" cy="118" r="20" fill="#fef2f2" stroke="#991b1b" stroke-width="1.5"/>
+          <text x="50" y="113" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="9" fill="#6b6560">P2</text>
+          <text x="50" y="125" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="13" font-weight="700" fill="#991b1b">L</text>
+          <circle cx="140" cy="118" r="20" fill="#f0fdf4" stroke="#166534" stroke-width="1.5"/>
+          <text x="140" y="113" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="9" fill="#6b6560">P2</text>
+          <text x="140" y="125" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="13" font-weight="700" fill="#166534">W</text>
+          <circle cx="230" cy="118" r="20" fill="#fef2f2" stroke="#991b1b" stroke-width="1.5"/>
+          <text x="230" y="113" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="9" fill="#6b6560">P2</text>
+          <text x="230" y="125" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="13" font-weight="700" fill="#991b1b">L</text>
+        </svg>
+      </div>
+      <div class="options" id="treeA-opts">
+        <label class="option">
+          <input type="radio" name="treeA" value="W">
+          W — Player 1 wins
+        </label>
+        <label class="option">
+          <input type="radio" name="treeA" value="L">
+          L — Player 1 loses
+        </label>
+      </div>
+
+      <hr class="divider">
+
+      <p style="font-size:13px;font-weight:500;color:var(--ink-mid);margin-bottom:8px;">Tree B</p>
+      <div class="tree-wrap">
+        <svg width="220" height="140" viewBox="0 0 220 140" xmlns="http://www.w3.org/2000/svg">
+          <line x1="110" y1="52" x2="55" y2="108" stroke="#d1d5db" stroke-width="1.5"/>
+          <line x1="110" y1="52" x2="165" y2="108" stroke="#d1d5db" stroke-width="1.5"/>
+          <!-- P1 root -->
+          <ellipse cx="110" cy="30" rx="48" ry="26" fill="#fff" stroke="#182B49" stroke-width="2" stroke-dasharray="5,3"/>
+          <text x="110" y="24" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="10" fill="#6b6560">P1 to move</text>
+          <text x="110" y="38" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="15" font-weight="500" fill="#182B49">?</text>
+          <!-- P2 leaves -->
+          <circle cx="55" cy="118" r="20" fill="#f0fdf4" stroke="#166534" stroke-width="1.5"/>
+          <text x="55" y="113" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="9" fill="#6b6560">P2</text>
+          <text x="55" y="125" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="13" font-weight="700" fill="#166534">W</text>
+          <circle cx="165" cy="118" r="20" fill="#f0fdf4" stroke="#166534" stroke-width="1.5"/>
+          <text x="165" y="113" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="9" fill="#6b6560">P2</text>
+          <text x="165" y="125" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="13" font-weight="700" fill="#166534">W</text>
+        </svg>
+      </div>
+      <div class="options" id="treeB-opts">
+        <label class="option">
+          <input type="radio" name="treeB" value="W">
+          W — Player 1 wins
+        </label>
+        <label class="option">
+          <input type="radio" name="treeB" value="L">
+          L — Player 1 loses
+        </label>
+      </div>
+    </div>
+
+    <!-- Reflection -->
+    <div class="form-section">
+      <div class="section-head">Reflection <span style="font-family:'DM Mono',monospace;font-size:11px;font-weight:400;color:var(--ink-faint)">full credit for any honest response</span></div>
+      <div class="field">
+        <label>What would you like more practice with before the assessment?</label>
+        <span class="hint">Be specific — name the game, concept, or skill.</span>
+        <textarea id="q-reflect" placeholder="e.g. I want more practice reading game trees, or describing winning strategies in words..."></textarea>
+      </div>
+    </div>
+
+    <div class="submit-row">
+      <button id="submit-btn">Submit answers</button>
+    </div>
+
+    <div id="result-panel">
+      <div class="result-score" id="result-score"></div>
+      <div class="result-msg"   id="result-msg"></div>
+      <div class="breakdown"    id="breakdown"></div>
+      <div class="submit-note"  id="submit-note"></div>
+    </div>
+
+  </div><!-- /ticket-body -->
+</div>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx617X0jGCDh14t1QRFOjSVhlro2ON_ohcLcQTy7NLGD-HXwwramOvO_PtHPVwRr0L1Ww/exec';
+
+const CORRECT = { q1: 'win', q2: 'yes', treeA: 'W', treeB: 'L' };
+const answers = { q1: null, q2: null, treeA: null, treeB: null };
+
+// Load button — just reveals the ticket, captures name
+document.getElementById('load-btn').addEventListener('click', () => {
+  const name = document.getElementById('sname').value.trim();
+  if (!name) { alert('Please enter your name.'); return; }
+  document.getElementById('sname').disabled = true;
+  document.getElementById('load-btn').disabled = true;
+  document.getElementById('load-btn').textContent = 'Loaded';
+  document.getElementById('ticket-body').style.display = 'block';
+});
+
+document.getElementById('sname').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('load-btn').click();
+});
+
+// Radio selection with visual feedback
+function setupRadios(groupName, optsId) {
+  const container = document.getElementById(optsId);
+  container.querySelectorAll('input[type=radio]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      answers[groupName] = radio.value;
+      container.querySelectorAll('.option').forEach(o => {
+        o.classList.remove('selected-correct', 'selected-wrong');
+      });
+      const parent = radio.closest('.option');
+      const isCorrect = radio.value === CORRECT[groupName];
+      parent.classList.add(isCorrect ? 'selected-correct' : 'selected-wrong');
+    });
+  });
+}
+
+setupRadios('q1', 'q1-opts');
+setupRadios('q2', 'q2-opts');
+setupRadios('treeA', 'treeA-opts');
+setupRadios('treeB', 'treeB-opts');
+
+// Submit
+document.getElementById('submit-btn').addEventListener('click', async () => {
+  const name = document.getElementById('sname').value.trim();
+  if (!name) { alert('Please enter your name.'); return; }
+  if (!answers.q1)    { alert('Please answer Question 1.'); return; }
+  if (!answers.q2)    { alert('Please answer Question 2.'); return; }
+  if (!answers.treeA) { alert('Please answer Tree A.'); return; }
+  if (!answers.treeB) { alert('Please answer Tree B.'); return; }
+
+  const reflect = document.getElementById('q-reflect').value.trim();
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+
+  const scored = [
+    { key: 'q1',    label: 'W node meaning' },
+    { key: 'q2',    label: 'Zermelo'         },
+    { key: 'treeA', label: 'Tree A'           },
+    { key: 'treeB', label: 'Tree B'           },
+  ];
+
+  let earned = 0;
+  const details = scored.map(q => {
+    const ok = answers[q.key] === CORRECT[q.key];
+    if (ok) earned++;
+    return { ...q, ok, given: answers[q.key] };
+  });
+
+  const reflectCredit = reflect.length > 0 ? 1 : 0;
+  earned += reflectCredit;
+  const total = 5;
+  const pct   = Math.round(earned / total * 100);
+
+  const scoredEarned = earned - reflectCredit;
+  let tier, msg;
+  if (scoredEarned === 4) {
+    tier = 'success';
+    msg  = 'All four questions correct. You\'re in good shape for the assessment.';
+  } else if (scoredEarned >= 2) {
+    tier = 'partial';
+    msg  = 'Check the questions marked incorrect. Make sure you can explain your reasoning, not just choose an answer.';
+  } else {
+    tier = 'low';
+    msg  = 'Review the game tree labeling rules and Zermelo\'s theorem before the assessment.';
+  }
+
+  const panel = document.getElementById('result-panel');
+  panel.className = tier;
+  panel.style.display = 'block';
+  const scoreEl = document.getElementById('result-score');
+  scoreEl.className = 'result-score ' + tier;
+  scoreEl.textContent = `${earned} / ${total}  (${pct}%)`;
+  document.getElementById('result-msg').textContent = msg;
+  document.getElementById('breakdown').innerHTML =
+    details.map(d => `
+      <div class="bd-row">
+        <span class="bd-qlabel">${d.label}</span>
+        <span class="bd-result ${d.ok ? 'c' : 'w'}">${d.ok ? '✓ correct' : '✗ incorrect'}</span>
+      </div>`).join('') +
+    `<div class="bd-row">
+      <span class="bd-qlabel">Reflection</span>
+      <span class="bd-result c">✓ full credit</span>
+    </div>`;
+
+  btn.textContent = 'Submitted';
+
+  const ts = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
+  const payload = {
+    timestamp:    ts,
+    name,
+    q1_ans:       answers.q1,
+    q1_correct:   answers.q1 === CORRECT.q1 ? 'yes' : 'no',
+    q2_ans:       answers.q2,
+    q2_correct:   answers.q2 === CORRECT.q2 ? 'yes' : 'no',
+    treeA_ans:    answers.treeA,
+    treeA_correct: answers.treeA === CORRECT.treeA ? 'yes' : 'no',
+    treeB_ans:    answers.treeB,
+    treeB_correct: answers.treeB === CORRECT.treeB ? 'yes' : 'no',
+    reflection:   reflect,
+  };
+
+  const noteEl = document.getElementById('submit-note');
+  try {
+    await fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+    noteEl.textContent = "Your responses have been recorded. You're all set.";
+  } catch(e) {
+    noteEl.textContent = 'Could not reach the grade sheet — let your teacher know.';
+  }
+
+  panel.scrollIntoView({ behavior:'smooth', block:'nearest' });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Math Dept — Agenda Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --red: #cf003d; --red-light: #cf003d18; --red-dark: #9a002e;
+  --bg: #f7f5f0; --surface: #ffffff; --surface2: #f2f0eb;
+  --border: #e0ddd7; --border2: #ccc9c2;
+  --text: #1a1816; --text2: #5c5750; --text3: #9c9890;
+  --radius: 10px; --shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; line-height: 1.5; }
+
+header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; align-items: center; gap: 1rem; }
+.wordmark { font-family: 'DM Serif Display', serif; font-size: 18px; letter-spacing: -0.01em; }
+.pipe { color: var(--border2); }
+.subtitle { font-size: 13px; color: var(--text2); font-weight: 300; }
+.spacer { flex: 1; }
+.header-right { display: flex; align-items: center; gap: 1rem; }
+.undo-btn { background: none; border: 1px solid var(--border2); border-radius: 7px; padding: 5px 12px; font-family: 'DM Sans', sans-serif; font-size: 12px; color: var(--text2); cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all 0.12s; }
+.undo-btn:hover:not(:disabled) { border-color: var(--red); color: var(--red); background: var(--red-light); }
+.undo-btn:disabled { opacity: 0.35; cursor: default; }
+.sync-status { font-size: 12px; color: var(--text3); display: flex; align-items: center; gap: 5px; }
+.sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text3); flex-shrink: 0; transition: background 0.3s; }
+.sync-dot.ok { background: #059669; }
+.sync-dot.err { background: #cf003d; }
+.sync-dot.syncing { background: #d97706; animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+
+.layout { display: grid; grid-template-columns: 340px 1fr; height: calc(100vh - 57px); }
+
+.left-panel { background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+.left-header { padding: 1rem 1.25rem 0.75rem; border-bottom: 1px solid var(--border); }
+.left-header h2 { font-family: 'DM Serif Display', serif; font-size: 15px; font-weight: 400; margin-bottom: 0.5rem; }
+.filter-row select { width: 100%; font-family: 'DM Sans', sans-serif; font-size: 12px; padding: 5px 8px; border: 1px solid var(--border2); border-radius: 6px; background: var(--surface); color: var(--text); cursor: pointer; }
+.filter-row select:focus { outline: 2px solid var(--red); outline-offset: 1px; }
+
+.cat-filters { display: flex; flex-wrap: wrap; gap: 4px; padding: 0.6rem 1.25rem; border-bottom: 1px solid var(--border); }
+.cat-pill { font-size: 11px; padding: 2px 8px; border-radius: 100px; border: 1px solid var(--border2); background: var(--surface); color: var(--text2); cursor: pointer; transition: all 0.12s; white-space: nowrap; }
+.cat-pill.active { border-color: var(--red); background: var(--red-light); color: var(--red); }
+.cat-pill:hover:not(.active) { background: var(--surface2); }
+
+.past-list { flex: 1; overflow-y: auto; padding: 0.75rem 1.25rem; }
+.past-item-card { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 5px; background: var(--bg); transition: border-color 0.12s, background 0.12s; }
+.past-item-card:hover { border-color: var(--border2); background: var(--surface2); }
+.past-item-main { flex: 1; min-width: 0; }
+.past-item-text { font-size: 13px; color: var(--text); line-height: 1.4; }
+.past-item-meta { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.past-item-add { background: none; border: 1px solid var(--border2); border-radius: 6px; padding: 3px 8px; font-size: 11px; color: var(--text2); cursor: pointer; white-space: nowrap; transition: all 0.12s; flex-shrink: 0; }
+.past-item-add:hover { border-color: var(--red); color: var(--red); background: var(--red-light); }
+
+.right-panel { display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+.right-header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1rem 1.5rem; display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; }
+.field-group { display: flex; flex-direction: column; gap: 3px; }
+.field-group label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 500; }
+.field-group input { font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 5px 10px; border: 1px solid var(--border2); border-radius: 7px; background: var(--surface); color: var(--text); }
+.field-group input:focus { outline: 2px solid var(--red); outline-offset: 1px; border-color: transparent; }
+.field-group input[type=date] { width: 150px; }
+.field-group input[type=text] { width: 90px; }
+
+.print-btn { margin-left: auto; display: flex; align-items: center; gap: 6px; background: var(--red); color: white; border: none; border-radius: 8px; padding: 7px 16px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: background 0.12s; }
+.print-btn:hover { background: var(--red-dark); }
+.print-btn.saving { background: #d97706; }
+.print-btn svg { width: 15px; height: 15px; }
+
+.agenda-body { flex: 1; overflow-y: auto; padding: 1.25rem 1.5rem; }
+
+.agenda-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; margin-bottom: 7px; box-shadow: var(--shadow); transition: border-color 0.12s; }
+.agenda-card:hover { border-color: var(--border2); }
+.agenda-card.dragging { opacity: 0.4; }
+.agenda-card.drag-over { border-color: var(--red); border-style: dashed; }
+
+.agenda-row { display: flex; align-items: center; gap: 8px; }
+.drag-handle { color: var(--text3); cursor: grab; font-size: 16px; line-height: 1; user-select: none; padding: 0 2px; }
+.drag-handle:active { cursor: grabbing; }
+.agenda-text { flex: 1; font-size: 14px; font-weight: 500; color: var(--text); }
+
+.cat-badge-wrap { position: relative; }
+.agenda-cat-badge { font-size: 10px; padding: 2px 8px; border-radius: 100px; font-weight: 500; white-space: nowrap; cursor: pointer; transition: opacity 0.12s; }
+.agenda-cat-badge:hover { opacity: 0.75; }
+.cat-dropdown { position: absolute; right: 0; top: calc(100% + 4px); background: var(--surface); border: 1px solid var(--border2); border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); z-index: 200; min-width: 160px; padding: 4px; display: none; }
+.cat-dropdown.open { display: block; }
+.cat-dropdown-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; color: var(--text); transition: background 0.1s; }
+.cat-dropdown-item:hover { background: var(--surface2); }
+.cat-dropdown-item.active { background: var(--red-light); color: var(--red); }
+
+.del-btn { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 18px; line-height: 1; padding: 0 2px; transition: color 0.12s; }
+.del-btn:hover { color: var(--red); }
+
+.sub-items { margin-top: 6px; padding-left: 24px; }
+.sub-row { display: flex; align-items: center; gap: 6px; padding: 3px 0; border-radius: 5px; }
+.sub-row:hover { background: var(--surface2); }
+.sub-arrow { color: var(--text3); font-size: 11px; flex-shrink: 0; padding-left: 2px; }
+.sub-text { flex: 1; font-size: 12px; color: var(--text2); }
+.sub-del { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 15px; line-height: 1; padding: 0 4px; opacity: 0; transition: opacity 0.1s, color 0.1s; }
+.sub-row:hover .sub-del { opacity: 1; }
+.sub-del:hover { color: var(--red); }
+
+.sub-add-row { display: flex; align-items: center; gap: 6px; padding: 5px 0 0; }
+.sub-add-row input { flex: 1; font-family: 'DM Sans', sans-serif; font-size: 12px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); color: var(--text); }
+.sub-add-row input:focus { outline: 1px solid var(--red); border-color: transparent; }
+
+.add-bar { background: var(--surface); border-top: 1px solid var(--border); padding: 0.85rem 1.5rem; display: flex; gap: 8px; align-items: center; }
+.add-input-wrap { flex: 1; position: relative; }
+#add-input { width: 100%; font-family: 'DM Sans', sans-serif; font-size: 14px; padding: 8px 12px; border: 1px solid var(--border2); border-radius: 8px; background: var(--bg); color: var(--text); }
+#add-input:focus { outline: 2px solid var(--red); outline-offset: 1px; border-color: transparent; }
+
+.autocomplete-list { position: absolute; bottom: 100%; left: 0; right: 0; background: var(--surface); border: 1px solid var(--border2); border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); max-height: 220px; overflow-y: auto; z-index: 100; margin-bottom: 4px; display: none; }
+.autocomplete-list.open { display: block; }
+.ac-item { padding: 8px 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); }
+.ac-item:last-child { border-bottom: none; }
+.ac-item:hover, .ac-item.selected { background: var(--surface2); }
+.ac-text { flex: 1; font-size: 13px; color: var(--text); }
+.ac-cat { font-size: 10px; color: var(--text3); }
+
+.cat-select { font-family: 'DM Sans', sans-serif; font-size: 12px; padding: 8px 10px; border: 1px solid var(--border2); border-radius: 8px; background: var(--surface); color: var(--text); cursor: pointer; }
+.add-btn { background: var(--red); color: white; border: none; border-radius: 8px; padding: 8px 18px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: background 0.12s; white-space: nowrap; }
+.add-btn:hover { background: var(--red-dark); }
+
+.empty-agenda { text-align: center; color: var(--text3); font-size: 14px; padding: 3rem 0; font-style: italic; }
+.past-empty { font-size: 13px; color: var(--text3); font-style: italic; padding: 1rem 0; text-align: center; }
+
+.toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--text); color: white; font-size: 13px; padding: 8px 18px; border-radius: 100px; opacity: 0; transition: opacity 0.2s, transform 0.2s; pointer-events: none; z-index: 999; white-space: nowrap; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.cat-logistical { background: #eff6ff; color: #1d4ed8; border: 1px solid #1d4ed820; }
+.cat-philosophy { background: #f5f3ff; color: #6d28d9; border: 1px solid #6d28d920; }
+.cat-student    { background: #ecfdf5; color: #047857; border: 1px solid #04785720; }
+.cat-teacher    { background: #fffbeb; color: #b45309; border: 1px solid #b4530920; }
+.cat-projects   { background: #fff1f2; color: #be123c; border: 1px solid #be123c20; }
+.dot-logistical { background: #2563eb; }
+.dot-philosophy { background: #7c3aed; }
+.dot-student    { background: #059669; }
+.dot-teacher    { background: #d97706; }
+.dot-projects   { background: #cf003d; }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="wordmark">Middlesex Mathematics</span>
+  <span class="pipe">|</span>
+  <span class="subtitle">Department Meeting Agenda Manager</span>
+  <span class="spacer"></span>
+  <div class="header-right">
+    <button class="undo-btn" id="undo-btn" onclick="undo()" disabled title="Undo (Ctrl+Z)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+      Undo
+    </button>
+    <div class="sync-status">
+      <div class="sync-dot" id="sync-dot"></div>
+      <span id="sync-label">Loading…</span>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <div class="left-panel">
+    <div class="left-header">
+      <h2>Past agenda items</h2>
+      <div class="filter-row">
+        <select id="time-filter" onchange="renderPast()">
+          <option value="month">This month in past years</option>
+          <option value="all">All items</option>
+        </select>
+      </div>
+    </div>
+    <div class="cat-filters" id="cat-filters"></div>
+    <div class="past-list" id="past-list"></div>
+  </div>
+
+  <div class="right-panel">
+    <div class="right-header">
+      <div class="field-group">
+        <label>Meeting date</label>
+        <input type="date" id="meeting-date" onchange="saveMeta()">
+      </div>
+      <div class="field-group">
+        <label>Time</label>
+        <input type="text" id="meeting-time" placeholder="e.g. 11:15am" onchange="saveMeta()">
+      </div>
+      <div class="field-group">
+        <label>Room</label>
+        <input type="text" id="meeting-room" placeholder="e.g. C-14" onchange="saveMeta()">
+      </div>
+      <button class="print-btn" id="print-btn" onclick="doPrint()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Print agenda
+      </button>
+    </div>
+    <div class="agenda-body" id="agenda-body"></div>
+    <div class="add-bar">
+      <div class="add-input-wrap">
+        <input type="text" id="add-input" placeholder="Add agenda item…" autocomplete="off"
+          oninput="onInputChange()" onkeydown="onInputKey(event)" onfocus="onInputFocus()" />
+        <div class="autocomplete-list" id="ac-list"></div>
+      </div>
+      <select class="cat-select" id="add-cat">
+        <option value="">Category…</option>
+      </select>
+      <button class="add-btn" onclick="addItem()">Add item</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/a/macros/mxschool.edu/s/AKfycby8CuEV-Dfx3qMfUxQ1M9X60UvmSpJOx1K0zewO5kgT623dsDbpns2bz-i4Bdj52Hz4/exec';
+
+const CATEGORIES = [
+  { id: 'logistical', label: 'Logistical',      color: '#2563eb' },
+  { id: 'philosophy', label: 'Dept. philosophy', color: '#7c3aed' },
+  { id: 'student',    label: 'Student related',  color: '#059669' },
+  { id: 'teacher',    label: 'Teacher updates',  color: '#d97706' },
+  { id: 'projects',   label: 'Dept. projects',   color: '#cf003d' },
+];
+
+const BANK_KEY = 'mxAgendaBank', AGENDA_KEY = 'mxAgendaCurrent', META_KEY = 'mxAgendaMeta';
+const META_DEFAULTS = { time: '11:15am – 12:15pm', room: 'C-14' };
+const MAX_UNDO = 20;
+
+let bank = [], agenda = [], activeCats = new Set();
+let undoStack = [];
+let openCatDropdown = null;
+
+// ── UNDO ──────────────────────────────────────────────────────────
+function pushUndo(label) {
+  undoStack.push({ label, agenda: JSON.parse(JSON.stringify(agenda)) });
+  if (undoStack.length > MAX_UNDO) undoStack.shift();
+  updateUndoBtn();
+}
+
+function undo() {
+  if (!undoStack.length) return;
+  const state = undoStack.pop();
+  agenda = state.agenda;
+  saveAgenda();
+  renderAgenda();
+  updateUndoBtn();
+  showToast('Undid: ' + state.label);
+}
+
+function updateUndoBtn() {
+  const btn = document.getElementById('undo-btn');
+  btn.disabled = undoStack.length === 0;
+  btn.title = undoStack.length ? `Undo: ${undoStack[undoStack.length-1].label} (Ctrl+Z)` : 'Nothing to undo';
+}
+
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+});
+
+// ── TOAST ─────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ── SYNC ──────────────────────────────────────────────────────────
+function setSync(state, label) {
+  document.getElementById('sync-dot').className = 'sync-dot' + (state ? ' ' + state : '');
+  document.getElementById('sync-label').textContent = label;
+}
+
+async function loadFromSheet() {
+  setSync('syncing', 'Loading from sheet…');
+  try {
+    const res = await fetch(SCRIPT_URL);
+    const data = await res.json();
+    if (data.ok && Array.isArray(data.bank)) {
+      bank = data.bank;
+      localStorage.setItem(BANK_KEY, JSON.stringify(bank));
+      setSync('ok', 'Synced with sheet');
+      return;
+    }
+    throw new Error('Bad response');
+  } catch(e) {
+    const local = localStorage.getItem(BANK_KEY);
+    if (local) { try { bank = JSON.parse(local); } catch(_) { bank = []; } }
+    setSync('err', bank.length ? 'Sheet unavailable — using local cache' : 'Sheet unavailable');
+  }
+}
+
+async function saveToSheet() {
+  setSync('syncing', 'Saving to sheet…');
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method: 'POST', body: JSON.stringify({ bank }),
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await res.json();
+    if (data.ok) { localStorage.setItem(BANK_KEY, JSON.stringify(bank)); setSync('ok', 'Saved to sheet'); return true; }
+    throw new Error(data.error || 'Save failed');
+  } catch(e) { setSync('err', 'Save failed — bank kept locally'); return false; }
+}
+
+// ── PERSISTENCE ───────────────────────────────────────────────────
+function loadLocal() {
+  try { agenda = JSON.parse(localStorage.getItem(AGENDA_KEY) || '[]'); } catch(e) { agenda = []; }
+}
+function saveAgenda() { localStorage.setItem(AGENDA_KEY, JSON.stringify(agenda)); }
+function saveMeta() {
+  localStorage.setItem(META_KEY, JSON.stringify({
+    time: document.getElementById('meeting-time').value,
+    room: document.getElementById('meeting-room').value,
+    date: document.getElementById('meeting-date').value
+  }));
+}
+function loadMeta() {
+  let meta = META_DEFAULTS;
+  try { meta = Object.assign({}, META_DEFAULTS, JSON.parse(localStorage.getItem(META_KEY) || '{}')); } catch(e) {}
+  document.getElementById('meeting-time').value = meta.time || '';
+  document.getElementById('meeting-room').value = meta.room || '';
+  document.getElementById('meeting-date').value = meta.date || nextThursday();
+}
+
+function nextThursday() {
+  const d = new Date(), day = d.getDay(), diff = (4 - day + 7) % 7 || 7;
+  d.setDate(d.getDate() + diff);
+  return d.toISOString().split('T')[0];
+}
+function uid() { return Math.random().toString(36).slice(2,9); }
+
+// ── BANK ──────────────────────────────────────────────────────────
+function findInBank(text) {
+  return bank.find(b => b.text.trim().toLowerCase() === text.trim().toLowerCase());
+}
+function addToBank(text, category, date) {
+  let entry = findInBank(text);
+  if (!entry) { entry = { id: uid(), text: text.trim(), category, usedDates: [] }; bank.push(entry); }
+  if (date && !entry.usedDates.includes(date)) entry.usedDates.push(date);
+  if (category) entry.category = category;
+  localStorage.setItem(BANK_KEY, JSON.stringify(bank));
+}
+
+// ── CATEGORY UI ───────────────────────────────────────────────────
+function buildCatFilters() {
+  document.getElementById('cat-filters').innerHTML = CATEGORIES.map(c =>
+    `<button class="cat-pill${activeCats.has(c.id)?' active':''}" onclick="toggleCat('${c.id}')">${c.label}</button>`
+  ).join('');
+  const sel = document.getElementById('add-cat');
+  sel.innerHTML = '<option value="">Category…</option>' +
+    CATEGORIES.map(c => `<option value="${c.id}">${c.label}</option>`).join('');
+}
+function toggleCat(id) {
+  if (activeCats.has(id)) activeCats.delete(id); else activeCats.add(id);
+  buildCatFilters(); renderPast();
+}
+
+// ── LEFT PANEL ────────────────────────────────────────────────────
+function renderPast() {
+  const mode = document.getElementById('time-filter').value;
+  const el = document.getElementById('past-list');
+  const curMonth = new Date().getMonth();
+  let items = [...bank];
+  if (mode === 'month') items = items.filter(item => item.usedDates.some(d => new Date(d+'T12:00:00').getMonth() === curMonth));
+  if (activeCats.size > 0) items = items.filter(item => activeCats.has(item.category));
+  items.sort((a, b) => a.text.localeCompare(b.text));
+  if (!items.length) { el.innerHTML = `<div class="past-empty">No items found${mode==='month'?' for this month':''}.</div>`; return; }
+  el.innerHTML = items.map(item => {
+    const cat = CATEGORIES.find(c => c.id === item.category);
+    const times = item.usedDates.length;
+    return `<div class="past-item-card">
+      <div class="past-item-main">
+        <div class="past-item-text">
+          ${cat?`<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${cat.color};margin-right:5px;vertical-align:middle;"></span>`:''}${escHtml(item.text)}
+        </div>
+        <div class="past-item-meta">${cat?cat.label:'Uncategorized'} · used ${times} time${times!==1?'s':''}</div>
+      </div>
+      <button class="past-item-add" onclick="addFromBank('${item.id}')">+ add</button>
+    </div>`;
+  }).join('');
+}
+
+function addFromBank(id) {
+  const entry = bank.find(b => b.id === id);
+  if (!entry || agenda.find(a => a.text.toLowerCase() === entry.text.toLowerCase())) return;
+  pushUndo('add "' + entry.text + '"');
+  agenda.push({ id: uid(), text: entry.text, category: entry.category, subs: [] });
+  saveAgenda(); renderAgenda();
+}
+
+// ── RIGHT PANEL ───────────────────────────────────────────────────
+function renderAgenda() {
+  const el = document.getElementById('agenda-body');
+  if (!agenda.length) { el.innerHTML = '<div class="empty-agenda">No items yet — add below or pull from past items on the left.</div>'; return; }
+  el.innerHTML = agenda.map((item, i) => {
+    const cat = CATEGORIES.find(c => c.id === item.category);
+    const catBadge = cat
+      ? `<div class="cat-badge-wrap">
+           <span class="agenda-cat-badge cat-${cat.id}" onclick="toggleCatDropdown(event,${i})" title="Click to change category">${cat.label} ▾</span>
+           <div class="cat-dropdown" id="catdd-${i}">
+             ${CATEGORIES.map(c => `<div class="cat-dropdown-item${c.id===item.category?' active':''}" onclick="recategorize(${i},'${c.id}')">
+               <span style="width:8px;height:8px;border-radius:50%;background:${c.color};display:inline-block;flex-shrink:0"></span>${c.label}
+             </div>`).join('')}
+             <div class="cat-dropdown-item${!item.category?' active':''}" onclick="recategorize(${i},'')">
+               <span style="width:8px;height:8px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>None
+             </div>
+           </div>
+         </div>`
+      : `<div class="cat-badge-wrap">
+           <span class="agenda-cat-badge" style="background:var(--surface2);color:var(--text3);border:1px solid var(--border2);cursor:pointer;" onclick="toggleCatDropdown(event,${i})" title="Assign category">+ category</span>
+           <div class="cat-dropdown" id="catdd-${i}">
+             ${CATEGORIES.map(c => `<div class="cat-dropdown-item" onclick="recategorize(${i},'${c.id}')">
+               <span style="width:8px;height:8px;border-radius:50%;background:${c.color};display:inline-block;flex-shrink:0"></span>${c.label}
+             </div>`).join('')}
+           </div>
+         </div>`;
+    return `<div class="agenda-card" draggable="true"
+      ondragstart="dragStart(event,${i})" ondragover="dragOver(event,${i})" ondrop="drop(event,${i})" ondragleave="dragLeave(event)">
+      <div class="agenda-row">
+        <span class="drag-handle">⠿</span>
+        <span class="agenda-text">${escHtml(item.text)}</span>
+        ${catBadge}
+        <button class="del-btn" onclick="removeItem(${i})" title="Remove item">×</button>
+      </div>
+      <div class="sub-items">
+        ${item.subs.map((s,j) => `<div class="sub-row">
+          <span class="sub-arrow">↳</span>
+          <span class="sub-text">${escHtml(s)}</span>
+          <button class="sub-del" onclick="removeSub(${i},${j})" title="Remove sub-item">×</button>
+        </div>`).join('')}
+        <div class="sub-add-row">
+          <span class="sub-arrow">↳</span>
+          <input type="text" placeholder="Add sub-item…" onkeydown="if(event.key==='Enter')addSub(${i},this)" />
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── CATEGORY DROPDOWN ─────────────────────────────────────────────
+function toggleCatDropdown(e, i) {
+  e.stopPropagation();
+  const dd = document.getElementById('catdd-' + i);
+  if (openCatDropdown && openCatDropdown !== dd) openCatDropdown.classList.remove('open');
+  dd.classList.toggle('open');
+  openCatDropdown = dd.classList.contains('open') ? dd : null;
+}
+
+function recategorize(i, catId) {
+  const oldCat = agenda[i].category;
+  if (oldCat === catId) { closeAllDropdowns(); return; }
+  const oldLabel = (CATEGORIES.find(c => c.id === oldCat) || {}).label || 'none';
+  const newLabel = (CATEGORIES.find(c => c.id === catId) || {}).label || 'none';
+  pushUndo(`recategorize "${agenda[i].text}" (${oldLabel} → ${newLabel})`);
+  agenda[i].category = catId;
+  closeAllDropdowns();
+  saveAgenda(); renderAgenda(); renderPast();
+}
+
+function closeAllDropdowns() {
+  document.querySelectorAll('.cat-dropdown.open').forEach(d => d.classList.remove('open'));
+  openCatDropdown = null;
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.cat-badge-wrap')) closeAllDropdowns();
+  if (!e.target.closest('.add-input-wrap')) hideAC();
+});
+
+// ── AGENDA MUTATIONS ──────────────────────────────────────────────
+function addItem() {
+  const inp = document.getElementById('add-input');
+  const catSel = document.getElementById('add-cat');
+  const text = inp.value.trim();
+  if (!text) { inp.focus(); return; }
+  const cat = catSel.value;
+  const date = document.getElementById('meeting-date').value;
+  pushUndo('add "' + text + '"');
+  agenda.push({ id: uid(), text, category: cat, subs: [] });
+  addToBank(text, cat, date);
+  inp.value = ''; catSel.value = '';
+  hideAC(); saveAgenda(); renderAgenda(); renderPast();
+  inp.focus();
+}
+
+function removeItem(i) {
+  pushUndo('delete "' + agenda[i].text + '"');
+  agenda.splice(i, 1);
+  saveAgenda(); renderAgenda();
+}
+
+function addSub(i, inp) {
+  const val = inp.value.trim();
+  if (!val) return;
+  pushUndo('add sub-item to "' + agenda[i].text + '"');
+  agenda[i].subs.push(val);
+  inp.value = '';
+  saveAgenda(); renderAgenda();
+}
+
+function removeSub(i, j) {
+  pushUndo('delete sub-item "' + agenda[i].subs[j] + '"');
+  agenda[i].subs.splice(j, 1);
+  saveAgenda(); renderAgenda();
+}
+
+// ── DRAG & DROP ───────────────────────────────────────────────────
+let dragIdx = null;
+function dragStart(e, i) { dragIdx = i; e.currentTarget.classList.add('dragging'); }
+function dragOver(e, i) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+function dragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+function drop(e, i) {
+  e.currentTarget.classList.remove('drag-over');
+  document.querySelectorAll('.agenda-card').forEach(c => c.classList.remove('dragging'));
+  if (dragIdx === null || dragIdx === i) return;
+  pushUndo('reorder items');
+  const moved = agenda.splice(dragIdx, 1)[0];
+  agenda.splice(i, 0, moved);
+  dragIdx = null;
+  saveAgenda(); renderAgenda();
+}
+
+// ── AUTOCOMPLETE ──────────────────────────────────────────────────
+let acIdx = -1, acItems = [];
+function onInputFocus() { onInputChange(); }
+function onInputChange() {
+  const q = document.getElementById('add-input').value.trim().toLowerCase();
+  const acList = document.getElementById('ac-list');
+  if (!q) { hideAC(); return; }
+  acItems = bank.filter(b => b.text.toLowerCase().includes(q) && !agenda.find(a => a.text.toLowerCase() === b.text.toLowerCase())).slice(0, 8);
+  if (!acItems.length) { hideAC(); return; }
+  acIdx = -1;
+  acList.innerHTML = acItems.map((item, i) => {
+    const cat = CATEGORIES.find(c => c.id === item.category);
+    return `<div class="ac-item" onmousedown="pickAC(${i})">
+      ${cat?`<span style="width:8px;height:8px;border-radius:50%;background:${cat.color};display:inline-block;flex-shrink:0"></span>`:''}
+      <span class="ac-text">${escHtml(item.text)}</span>
+      <span class="ac-cat">${cat?cat.label:''}</span>
+    </div>`;
+  }).join('');
+  acList.classList.add('open');
+}
+function onInputKey(e) {
+  const acList = document.getElementById('ac-list');
+  if (!acList.classList.contains('open')) { if (e.key === 'Enter') addItem(); return; }
+  const rows = acList.querySelectorAll('.ac-item');
+  if (e.key === 'ArrowDown') { e.preventDefault(); acIdx = Math.min(acIdx+1, rows.length-1); highlightAC(rows); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); acIdx = Math.max(acIdx-1, -1); highlightAC(rows); }
+  else if (e.key === 'Enter') { e.preventDefault(); if (acIdx >= 0) pickAC(acIdx); else addItem(); }
+  else if (e.key === 'Escape') hideAC();
+}
+function highlightAC(rows) { rows.forEach((r,i) => r.classList.toggle('selected', i===acIdx)); }
+function pickAC(i) {
+  const item = acItems[i]; if (!item) return;
+  document.getElementById('add-input').value = item.text;
+  document.getElementById('add-cat').value = item.category || '';
+  hideAC(); addItem();
+}
+function hideAC() { document.getElementById('ac-list').classList.remove('open'); acItems = []; acIdx = -1; }
+
+// ── PRINT ─────────────────────────────────────────────────────────
+function fmtDate(val) {
+  if (!val) return '';
+  const d = new Date(val + 'T12:00:00');
+  return d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+async function doPrint() {
+  const btn = document.getElementById('print-btn');
+  btn.classList.add('saving');
+  btn.childNodes[btn.childNodes.length-1].textContent = ' Saving…';
+  await saveToSheet();
+  btn.classList.remove('saving');
+  btn.childNodes[btn.childNodes.length-1].textContent = ' Print agenda';
+
+  const dateVal = document.getElementById('meeting-date').value;
+  const time = document.getElementById('meeting-time').value;
+  const room = document.getElementById('meeting-room').value;
+  const itemsHtml = agenda.map(item =>
+    `<li>${item.text}${item.subs.length?'<ul>'+item.subs.map(s=>`<li>${s}</li>`).join('')+'</ul>':''}</li>`
+  ).join('');
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Dept. Meeting Agenda</title>
+  <style>body{font-family:Georgia,serif;max-width:600px;margin:60px auto;color:#111;font-size:13pt;line-height:1.6}
+  .dept{font-size:10pt;font-weight:bold;text-transform:uppercase;letter-spacing:0.08em;color:#cf003d;margin-bottom:4px}
+  .school{font-size:10pt;color:#888;margin-bottom:18px;padding-bottom:14px;border-bottom:2px solid #cf003d}
+  h1{font-size:20pt;font-weight:bold;color:#cf003d;margin-bottom:2px}
+  .meta{font-size:11pt;color:#444;border-bottom:1px solid #eee;padding-bottom:10px;margin-bottom:28px}
+  ul{margin:8px 0 8px 20px}li{margin-bottom:8px}ul ul{margin-top:4px}ul ul li{font-size:11pt;color:#333;margin-bottom:4px}
+  @media print{body{margin:30px 40px}}</style></head><body>
+  <div class="dept">Departments of Mathematics &amp; Computer Science</div>
+  <div class="school">Middlesex School</div>
+  <h1>Agenda for Department Meeting</h1>
+  <div class="meta">${fmtDate(dateVal)?fmtDate(dateVal)+'<br>':''}${time}${room?' &nbsp;·&nbsp; '+room:''}</div>
+  <ul>${itemsHtml||'<li><em>No items added.</em></li>'}</ul>
+  </body></html>`;
+
+  const w = window.open('', '_blank');
+  w.document.write(html); w.document.close(); w.focus();
+  setTimeout(() => w.print(), 500);
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function seedIfEmpty() {
+  if (bank.length > 0) return;
+  const seed = [
+    { text: 'New semester check-in', cat: 'logistical', date: '2025-02-06' },
+    { text: 'Curriculum guide', cat: 'projects', date: '2025-02-06' },
+    { text: 'Retakes / corrections / mulligans', cat: 'logistical', date: '2025-02-06' },
+    { text: 'Hiring update', cat: 'teacher', date: '2025-02-13' },
+    { text: 'Vertical alignment vs. horizontal alignment', cat: 'philosophy', date: '2025-02-13' },
+    { text: 'Placement test', cat: 'projects', date: '2025-02-20' },
+    { text: 'Math 31 alignment discussion', cat: 'philosophy', date: '2025-02-27' },
+    { text: 'Staffing update', cat: 'teacher', date: '2025-03-06' },
+    { text: 'Grading procedures for 3rd marking period', cat: 'logistical', date: '2025-03-06' },
+    { text: 'Course recommendations', cat: 'student', date: '2025-03-06' },
+  ];
+  seed.forEach(s => addToBank(s.text, s.cat, s.date));
+}
+
+async function init() {
+  loadLocal(); loadMeta(); buildCatFilters(); renderAgenda();
+  await loadFromSheet();
+  seedIfEmpty();
+  renderPast(); renderAgenda();
+  updateUndoBtn();
+}
+
+init();
+</script>
+</body>
+</html>

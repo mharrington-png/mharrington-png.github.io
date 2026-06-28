@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Station Rotation Timer</title>
+<style>
+  @import url('https://fonts.cdnfonts.com/css/opendyslexic');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy:   #0D1B2A;
+    --red:    #cf003d;
+    --amber:  #E8A020;
+    --green:  #3CB87A;
+    --purple: #7B5EA7;
+    --white:  #F4F6FA;
+    --dim:    #3A4A5C;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--navy);
+    color: var(--white);
+    font-family: 'OpenDyslexic', sans-serif;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    min-height: 100vh;
+  }
+
+  /* ── PHASE LABEL ── */
+  #phase-label {
+    font-size: clamp(1rem, 3.5vw, 2rem);
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--white);
+    opacity: 0.85;
+    margin-bottom: 0.4em;
+    transition: color 0.4s;
+    min-height: 1.5em;
+    text-align: center;
+  }
+
+  /* ── RING ── */
+  #ring-wrap {
+    position: relative;
+    width: clamp(260px, 42vw, 520px);
+    height: clamp(260px, 42vw, 520px);
+    flex-shrink: 0;
+  }
+
+  #ring-svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+
+  .ring-bg {
+    fill: none;
+    stroke: var(--dim);
+    stroke-width: 18;
+  }
+
+  #ring-arc {
+    fill: none;
+    stroke: var(--red);
+    stroke-width: 18;
+    stroke-linecap: round;
+    transition: stroke 0.4s;
+  }
+
+  /* tick marks */
+  .tick-mark {
+    stroke: var(--navy);
+    stroke-width: 3;
+  }
+
+  #ring-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.1em;
+  }
+
+  #countdown {
+    font-family: 'OpenDyslexic Mono', 'OpenDyslexic', monospace;
+    font-size: clamp(3rem, 10vw, 7.5rem);
+    font-weight: 700;
+    color: var(--white);
+    letter-spacing: -0.04em;
+    line-height: 1;
+    transition: color 0.4s;
+  }
+
+  #sub-label {
+    font-size: clamp(0.75rem, 2vw, 1.1rem);
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--white);
+    opacity: 0.6;
+    margin-top: 0.2em;
+  }
+
+  /* ── ROUND DOTS ── */
+  #rounds-row {
+    display: flex;
+    align-items: center;
+    gap: clamp(10px, 2.5vw, 22px);
+    margin-top: 1.4em;
+  }
+
+  .round-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .round-label {
+    font-size: clamp(0.55rem, 1.2vw, 0.75rem);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    opacity: 0.4;
+    font-weight: 600;
+  }
+
+  .round-dot {
+    width: clamp(12px, 2.2vw, 22px);
+    height: clamp(12px, 2.2vw, 22px);
+    border-radius: 50%;
+    background: var(--dim);
+    border: 2px solid transparent;
+    transition: background 0.3s, border-color 0.3s, transform 0.2s;
+  }
+
+  .round-dot.done {
+    background: var(--dim);
+    border-color: var(--green);
+  }
+  .round-dot.done::after {
+    content: '';
+    display: block;
+    width: 60%;
+    height: 60%;
+    border-radius: 50%;
+    background: var(--green);
+    margin: 20% auto;
+  }
+  .round-dot.active {
+    background: transparent;
+    border-color: var(--white);
+    transform: scale(1.25);
+    box-shadow: 0 0 10px rgba(255,255,255,0.3);
+  }
+
+  /* separator between round groups */
+  .round-sep {
+    width: 1px;
+    height: clamp(28px, 4vw, 44px);
+    background: var(--dim);
+    margin: 0 clamp(4px, 1vw, 10px);
+    margin-top: clamp(18px, 3vw, 30px);
+  }
+
+  /* ── CONTROLS ── */
+  #controls {
+    display: flex;
+    gap: 1em;
+    margin-top: 1.6em;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .btn {
+    font-family: 'OpenDyslexic', sans-serif;
+    font-size: clamp(0.8rem, 1.5vw, 1rem);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border: 2px solid var(--dim);
+    background: transparent;
+    color: var(--white);
+    padding: 0.55em 1.4em;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, opacity 0.2s;
+  }
+  .btn:hover { background: rgba(255,255,255,0.08); border-color: var(--white); }
+  .btn.primary { border-color: var(--white); background: rgba(255,255,255,0.1); }
+  .btn:active { opacity: 0.7; }
+
+  /* ── SEQUENCE STRIP ── */
+  #sequence-strip {
+    margin-top: 1.3em;
+    display: flex;
+    gap: clamp(6px, 1.5vw, 14px);
+    align-items: center;
+    justify-content: center;
+  }
+
+  .seq-chip {
+    font-size: clamp(0.75rem, 1.6vw, 1rem);
+    padding: clamp(6px, 1vw, 10px) clamp(14px, 2.5vw, 26px);
+    border-radius: 6px;
+    background: var(--dim);
+    color: rgba(255,255,255,0.35);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: background 0.3s, color 0.3s, transform 0.2s, box-shadow 0.3s;
+    white-space: nowrap;
+    border: 2px solid transparent;
+  }
+  .seq-chip.current {
+    background: rgba(255,255,255,0.12);
+    color: var(--white);
+    border-color: currentColor;
+    transform: scale(1.06);
+    box-shadow: 0 0 16px rgba(255,255,255,0.1);
+  }
+  .seq-chip.current[data-type="transition"] { color: var(--amber); border-color: var(--amber); }
+  .seq-chip.current[data-type="discuss"]    { color: var(--red);   border-color: var(--red);   }
+  .seq-chip.current[data-type="write"]      { color: var(--green); border-color: var(--green); }
+
+  .seq-chip-arrow {
+    color: rgba(255,255,255,0.2);
+    font-size: clamp(0.8rem, 1.4vw, 1rem);
+    flex-shrink: 0;
+  }
+
+  /* ── FLASH OVERLAY ── */
+  #flash {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.05s;
+    z-index: 100;
+  }
+
+  /* ── DONE SCREEN ── */
+  #done-screen {
+    position: fixed;
+    inset: 0;
+    background: var(--navy);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1em;
+    z-index: 200;
+  }
+  #done-screen h1 {
+    font-size: clamp(2rem, 6vw, 4.5rem);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  #done-screen p {
+    opacity: 0.6;
+    font-size: 1.1rem;
+  }
+
+  /* ── SETTINGS PANEL ── */
+  #settings-panel {
+    position: fixed;
+    inset: 0;
+    background: rgba(13,27,42,0.97);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.2em;
+    z-index: 300;
+    padding: 2em;
+  }
+  #settings-panel h2 {
+    font-size: 1.5rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 0.5em;
+  }
+  .setting-row {
+    display: flex;
+    align-items: center;
+    gap: 1em;
+    width: 100%;
+    max-width: 380px;
+    justify-content: space-between;
+  }
+  .setting-row label {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    flex: 1;
+  }
+  .setting-row input[type=number] {
+    width: 70px;
+    background: var(--dim);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: var(--white);
+    font-family: 'OpenDyslexic Mono', 'OpenDyslexic', monospace;
+    font-size: 1rem;
+    padding: 0.3em 0.5em;
+    border-radius: 4px;
+    text-align: center;
+  }
+  .setting-row input[type=checkbox] {
+    width: 18px; height: 18px; cursor: pointer;
+  }
+  .sound-options {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .sound-btn {
+    font-family: 'OpenDyslexic', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 5px 12px;
+    border-radius: 4px;
+    border: 2px solid var(--dim);
+    background: transparent;
+    color: rgba(255,255,255,0.5);
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+  .sound-btn:hover { border-color: rgba(255,255,255,0.4); color: var(--white); }
+  .sound-btn.selected { border-color: var(--white); background: rgba(255,255,255,0.12); color: var(--white); }
+</style>
+</head>
+<body>
+
+<div id="phase-label">Ready</div>
+
+<div id="ring-wrap">
+  <svg id="ring-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background ring -->
+    <circle class="ring-bg" cx="100" cy="100" r="88"/>
+    <!-- Active arc -->
+    <circle id="ring-arc" cx="100" cy="100" r="88"
+            stroke-dasharray="553" stroke-dashoffset="0"/>
+  </svg>
+  <div id="ring-center">
+    <div id="countdown">–:––</div>
+    <div id="sub-label">Press Start</div>
+  </div>
+</div>
+
+<div id="rounds-row"></div>
+
+<div id="sequence-strip"></div>
+
+<div id="controls">
+  <button class="btn" id="btn-settings">⚙ Settings</button>
+  <button class="btn primary" id="btn-start">▶ Start</button>
+  <button class="btn" id="btn-pause" style="display:none">⏸ Pause</button>
+  <button class="btn" id="btn-reset">↺ Reset</button>
+  <button class="btn" id="btn-skip">⏭ Skip</button>
+</div>
+
+<div id="flash"></div>
+
+<div id="done-screen">
+  <h1>🎉 Activity Complete</h1>
+  <p>All sets finished. Well done, everyone.</p>
+  <button class="btn primary" id="btn-done-reset">↺ Start Over</button>
+</div>
+
+<div id="settings-panel">
+  <h2>⚙ Timer Settings</h2>
+  <div class="setting-row">
+    <label>Sets (groups of rounds)</label>
+    <input type="number" id="s-sets" value="2" min="1" max="6">
+  </div>
+  <div class="setting-row">
+    <label>Rounds per set</label>
+    <input type="number" id="s-rounds" value="4" min="1" max="8">
+  </div>
+  <div class="setting-row">
+    <label>Short transition (sec)</label>
+    <input type="number" id="s-trans" value="30" min="5" max="120">
+  </div>
+  <div class="setting-row">
+    <label>Discuss time (sec)</label>
+    <input type="number" id="s-discuss" value="120" min="10" max="300">
+  </div>
+  <div class="setting-row">
+    <label>Write time (sec)</label>
+    <input type="number" id="s-write" value="120" min="10" max="300">
+  </div>
+  <div class="setting-row">
+    <label>Long break (sec)</label>
+    <input type="number" id="s-long" value="90" min="10" max="300">
+  </div>
+  <div class="setting-row">
+    <label>Sound theme</label>
+    <div class="sound-options" id="sound-options">
+      <button class="sound-btn selected" data-theme="beep">Beep</button>
+      <button class="sound-btn" data-theme="bell">Bell</button>
+      <button class="sound-btn" data-theme="marimba">Marimba</button>
+      <button class="sound-btn" data-theme="off">Off</button>
+    </div>
+  </div>
+  <div style="display:flex;gap:1em;margin-top:0.5em">
+    <button class="btn" id="btn-settings-cancel">Cancel</button>
+    <button class="btn primary" id="btn-settings-save">Save & Reset</button>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────────────────────
+let CONFIG = {
+  sets: 2,
+  roundsPerSet: 4,
+  shortTransSec: 30,
+  discussSec: 120,
+  writeSec: 120,
+  longBreakSec: 90,
+  soundTheme: 'beep', // 'beep' | 'bell' | 'marimba' | 'off'
+};
+
+// ── PHASE DEFINITIONS ────────────────────────────────────────────────────────
+// A "phase" has: label, subLabel, duration (sec), color, flashColor, nextPhase fn
+// Phases built dynamically from CONFIG
+const RING_C = 2 * Math.PI * 88; // circumference
+
+// ── STATE ────────────────────────────────────────────────────────────────────
+let phases = [];   // full flat list of phase objects
+let phaseIdx = 0;
+let timeLeft = 0;
+let running = false;
+let ticker = null;
+let currentSet = 0; // 0-indexed
+let waitingAfterBreak = false;
+
+// ── AUDIO ────────────────────────────────────────────────────────────────────
+let audioCtx = null;
+function getAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function beep(freq, dur, type='sine', vol=0.4) {
+  if (CONFIG.soundTheme === 'off') return;
+  try {
+    const ctx = getAudio();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = type;
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(vol, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + dur);
+  } catch(e) {}
+}
+
+// Bell: slow attack, long ring decay with slight vibrato feel
+function bell(freq, dur=1.2, vol=0.35) {
+  if (CONFIG.soundTheme === 'off') return;
+  try {
+    const ctx = getAudio();
+    const osc = ctx.createOscillator();
+    const osc2 = ctx.createOscillator(); // slight inharmonic partial for realism
+    const gain = ctx.createGain();
+    osc.connect(gain); osc2.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine'; osc.frequency.value = freq;
+    osc2.type = 'sine'; osc2.frequency.value = freq * 2.756; // bell partial
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + 0.005);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + dur);
+    osc2.start(ctx.currentTime); osc2.stop(ctx.currentTime + dur);
+  } catch(e) {}
+}
+
+// Marimba: short woody thump with fast decay
+function marimba(freq, vol=0.5) {
+  if (CONFIG.soundTheme === 'off') return;
+  try {
+    const ctx = getAudio();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(vol, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.4);
+  } catch(e) {}
+}
+
+// ── PHASE SOUNDS (theme-aware) ────────────────────────────────────────────────
+function playTransition() {
+  const t = CONFIG.soundTheme;
+  if (t === 'beep')    { beep(880, 0.18); setTimeout(()=>beep(880,0.18), 200); }
+  if (t === 'bell')    { bell(660, 1.0); }
+  if (t === 'marimba') { marimba(784); setTimeout(()=>marimba(784), 220); }
+}
+function playDiscuss() {
+  const t = CONFIG.soundTheme;
+  if (t === 'beep')    { beep(660, 0.3, 'sine', 0.5); }
+  if (t === 'bell')    { bell(523, 1.4, 0.4); }
+  if (t === 'marimba') { marimba(523); setTimeout(()=>marimba(659), 160); }
+}
+function playWrite() {
+  const t = CONFIG.soundTheme;
+  if (t === 'beep')    { beep(440, 0.15); setTimeout(()=>beep(550,0.25), 150); }
+  if (t === 'bell')    { bell(784, 1.2, 0.35); setTimeout(()=>bell(1047,0.9,0.25), 300); }
+  if (t === 'marimba') { marimba(440); setTimeout(()=>marimba(523), 140); setTimeout(()=>marimba(659), 280); }
+}
+function playLongBreak() {
+  const t = CONFIG.soundTheme;
+  if (t === 'beep')    { [660,550,440].forEach((f,i)=>setTimeout(()=>beep(f,0.25),i*160)); }
+  if (t === 'bell')    { [523,440,392].forEach((f,i)=>setTimeout(()=>bell(f,1.5,0.3),i*350)); }
+  if (t === 'marimba') { [659,523,440,392].forEach((f,i)=>setTimeout(()=>marimba(f,0.4),i*180)); }
+}
+function playWarning() {
+  const t = CONFIG.soundTheme;
+  if (t === 'beep')    { beep(1100, 0.1, 'square', 0.25); }
+  if (t === 'bell')    { bell(1047, 0.4, 0.2); }
+  if (t === 'marimba') { marimba(1047, 0.3); }
+}
+function playDone() {
+  const t = CONFIG.soundTheme;
+  if (t === 'beep')    { [523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,0.4),i*180)); }
+  if (t === 'bell')    { [523,659,784,1047].forEach((f,i)=>setTimeout(()=>bell(f,1.8,0.35),i*300)); }
+  if (t === 'marimba') { [523,659,784,1047,784,1047].forEach((f,i)=>setTimeout(()=>marimba(f,0.5),i*160)); }
+}
+
+// ── BUILD PHASE LIST ─────────────────────────────────────────────────────────
+function buildPhases() {
+  phases = [];
+  const { sets, roundsPerSet, shortTransSec, discussSec, writeSec, longBreakSec } = CONFIG;
+
+  for (let s = 0; s < sets; s++) {
+    for (let r = 0; r < roundsPerSet; r++) {
+      // Short transition (except at start of very first round of first set)
+      if (!(s === 0 && r === 0)) {
+        phases.push({
+          type: 'transition',
+          label: 'Rotate to Next Station',
+          subLabel: `Set ${s+1} · Round ${r+1} of ${roundsPerSet}`,
+          duration: shortTransSec,
+          color: 'var(--amber)',
+          set: s, round: r,
+          onStart: playTransition,
+        });
+      }
+      // Discuss
+      phases.push({
+        type: 'discuss',
+        label: 'Discuss — No Writing',
+        subLabel: `Set ${s+1} · Round ${r+1} of ${roundsPerSet}`,
+        duration: discussSec,
+        color: 'var(--red)',
+        set: s, round: r,
+        onStart: playDiscuss,
+      });
+      // Write
+      phases.push({
+        type: 'write',
+        label: 'Write Your Solution',
+        subLabel: `Set ${s+1} · Round ${r+1} of ${roundsPerSet}`,
+        duration: writeSec,
+        color: 'var(--green)',
+        set: s, round: r,
+        onStart: playWrite,
+      });
+    }
+    // Long break after each set (except last)
+    if (s < sets - 1) {
+      phases.push({
+        type: 'longbreak',
+        label: 'Check Answers · New Problems',
+        subLabel: `Break between Set ${s+1} and Set ${s+2}`,
+        duration: longBreakSec,
+        color: 'var(--purple)',
+        set: s, round: -1,
+        onStart: playLongBreak,
+        pauseAfter: true,
+      });
+    }
+  }
+}
+
+// ── RENDER ROUNDS ROW ────────────────────────────────────────────────────────
+function buildRoundsRow() {
+  const row = document.getElementById('rounds-row');
+  row.innerHTML = '';
+  const { sets, roundsPerSet } = CONFIG;
+
+  for (let s = 0; s < sets; s++) {
+    if (s > 0) {
+      const sep = document.createElement('div');
+      sep.className = 'round-sep';
+      row.appendChild(sep);
+    }
+    const grp = document.createElement('div');
+    grp.className = 'round-group';
+    const lbl = document.createElement('div');
+    lbl.className = 'round-label';
+    lbl.textContent = `Set ${s+1}`;
+    grp.appendChild(lbl);
+    const dotsRow = document.createElement('div');
+    dotsRow.style.cssText = 'display:flex;gap:8px';
+    for (let r = 0; r < roundsPerSet; r++) {
+      const dot = document.createElement('div');
+      dot.className = 'round-dot';
+      dot.id = `dot-${s}-${r}`;
+      dotsRow.appendChild(dot);
+    }
+    grp.appendChild(dotsRow);
+    row.appendChild(grp);
+  }
+}
+
+// ── RENDER SEQUENCE STRIP ────────────────────────────────────────────────────
+// Always shows one rotation: Move › Discuss › Write
+const ROTATION_CHIPS = [
+  { type: 'transition', label: '↻ Move'    },
+  { type: 'discuss',    label: '💬 Discuss' },
+  { type: 'write',      label: '✏ Write'    },
+];
+function buildSequenceStrip() {
+  const strip = document.getElementById('sequence-strip');
+  strip.innerHTML = '';
+  ROTATION_CHIPS.forEach((c, i) => {
+    if (i > 0) {
+      const arrow = document.createElement('span');
+      arrow.className = 'seq-chip-arrow';
+      arrow.textContent = '›';
+      strip.appendChild(arrow);
+    }
+    const chip = document.createElement('div');
+    chip.className = 'seq-chip';
+    chip.id = `chip-${c.type}`;
+    chip.dataset.type = c.type;
+    chip.textContent = c.label;
+    strip.appendChild(chip);
+  });
+}
+function updateSequenceStrip() {
+  const currentType = phaseIdx < phases.length ? phases[phaseIdx].type : null;
+  ROTATION_CHIPS.forEach(c => {
+    const chip = document.getElementById(`chip-${c.type}`);
+    if (!chip) return;
+    chip.className = 'seq-chip' + (c.type === currentType ? ' current' : '');
+  });
+}
+
+// ── RING ─────────────────────────────────────────────────────────────────────
+function setRingProgress(fraction, color) {
+  const arc = document.getElementById('ring-arc');
+  const offset = RING_C * (1 - Math.max(0, Math.min(1, fraction)));
+  arc.style.strokeDashoffset = offset;
+  arc.style.stroke = color;
+}
+
+// ── DOT STATE ────────────────────────────────────────────────────────────────
+function updateDots() {
+  const p = phases[phaseIdx];
+  const { sets, roundsPerSet } = CONFIG;
+  for (let s = 0; s < sets; s++) {
+    for (let r = 0; r < roundsPerSet; r++) {
+      const dot = document.getElementById(`dot-${s}-${r}`);
+      if (!dot) continue;
+      // Find the write phase for this set/round to determine if done
+      const writePhase = phases.find(ph => ph.type === 'write' && ph.set === s && ph.round === r);
+      const writeIdx = phases.indexOf(writePhase);
+      if (writeIdx < phaseIdx) {
+        dot.className = 'round-dot done';
+      } else if (p && p.set === s && p.round === r && (p.type === 'discuss' || p.type === 'write' || (p.type === 'transition' && p.round === r))) {
+        dot.className = 'round-dot active';
+      } else {
+        dot.className = 'round-dot';
+      }
+    }
+  }
+}
+
+// ── DISPLAY ──────────────────────────────────────────────────────────────────
+function formatTime(sec) {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+
+function renderPhase() {
+  if (phaseIdx >= phases.length) { showDone(); return; }
+  const p = phases[phaseIdx];
+  document.getElementById('phase-label').textContent = p.label;
+  document.getElementById('sub-label').textContent = p.subLabel;
+  document.getElementById('countdown').textContent = formatTime(timeLeft);
+  setRingProgress(timeLeft / p.duration, p.color);
+  updateDots();
+  updateSequenceStrip();
+}
+
+// ── FLASH ────────────────────────────────────────────────────────────────────
+function flash(color) {
+  const el = document.getElementById('flash');
+  el.style.background = color;
+  el.style.opacity = '0.18';
+  setTimeout(() => { el.style.opacity = '0'; }, 120);
+}
+
+// ── TICK ─────────────────────────────────────────────────────────────────────
+function tick() {
+  if (!running) return;
+  timeLeft--;
+
+  // Warning beep at 10 seconds
+  if (timeLeft === 10) playWarning();
+
+  if (timeLeft <= 0) {
+    const p = phases[phaseIdx];
+    if (p && p.pauseAfter) {
+      // Stay on this phase but freeze and wait for manual start
+      timeLeft = 0;
+      running = false;
+      waitingAfterBreak = true;
+      clearInterval(ticker);
+      document.getElementById('phase-label').textContent = 'Ready When You Are';
+      document.getElementById('sub-label').textContent = 'Press Start to begin next set';
+      document.getElementById('countdown').textContent = '–:––';
+      setRingProgress(0, p.color);
+      updateSequenceStrip();
+      document.getElementById('btn-start').style.display = '';
+      document.getElementById('btn-pause').style.display = 'none';
+      playLongBreak();
+      return;
+    }
+    advancePhase();
+    return;
+  }
+  document.getElementById('countdown').textContent = formatTime(timeLeft);
+  const p = phases[phaseIdx];
+  setRingProgress(timeLeft / p.duration, p.color);
+}
+
+function advancePhase() {
+  phaseIdx++;
+  if (phaseIdx >= phases.length) { running = false; clearInterval(ticker); showDone(); return; }
+  const p = phases[phaseIdx];
+  timeLeft = p.duration;
+  flash(p.color);
+  if (p.onStart) p.onStart();
+  renderPhase();
+}
+
+// ── CONTROLS ─────────────────────────────────────────────────────────────────
+document.getElementById('btn-start').addEventListener('click', () => {
+  try { getAudio().resume(); } catch(e) {}
+  clearInterval(ticker);
+
+  if (waitingAfterBreak) {
+    // Advance past the longbreak phase and set up the next phase
+    waitingAfterBreak = false;
+    phaseIdx++;
+    if (phaseIdx >= phases.length) { showDone(); return; }
+    const p = phases[phaseIdx];
+    timeLeft = p.duration;
+    flash(p.color);
+    if (p.onStart) p.onStart();
+    renderPhase();
+  } else if (phaseIdx === 0 && !running) {
+    timeLeft = phases[phaseIdx].duration;
+    if (phases[phaseIdx].onStart) phases[phaseIdx].onStart();
+    renderPhase();
+  }
+
+  running = true;
+  ticker = setInterval(tick, 1000);
+  document.getElementById('btn-start').style.display = 'none';
+  document.getElementById('btn-pause').style.display = '';
+});
+
+document.getElementById('btn-pause').addEventListener('click', () => {
+  running = false;
+  clearInterval(ticker);
+  document.getElementById('btn-start').style.display = '';
+  document.getElementById('btn-pause').style.display = 'none';
+});
+
+document.getElementById('btn-reset').addEventListener('click', () => {
+  resetAll();
+});
+
+document.getElementById('btn-skip').addEventListener('click', () => {
+  if (phaseIdx >= phases.length) return;
+  advancePhase();
+});
+
+document.getElementById('btn-done-reset').addEventListener('click', () => {
+  document.getElementById('done-screen').style.display = 'none';
+  resetAll();
+});
+
+// ── SETTINGS ─────────────────────────────────────────────────────────────────
+document.getElementById('btn-settings').addEventListener('click', () => {
+  document.getElementById('s-sets').value = CONFIG.sets;
+  document.getElementById('s-rounds').value = CONFIG.roundsPerSet;
+  document.getElementById('s-trans').value = CONFIG.shortTransSec;
+  document.getElementById('s-discuss').value = CONFIG.discussSec;
+  document.getElementById('s-write').value = CONFIG.writeSec;
+  document.getElementById('s-long').value = CONFIG.longBreakSec;
+  // Sync sound theme buttons
+  document.querySelectorAll('.sound-btn').forEach(b => {
+    b.classList.toggle('selected', b.dataset.theme === CONFIG.soundTheme);
+  });
+  document.getElementById('settings-panel').style.display = 'flex';
+});
+document.getElementById('btn-settings-cancel').addEventListener('click', () => {
+  document.getElementById('settings-panel').style.display = 'none';
+});
+// Sound theme toggle buttons
+document.getElementById('sound-options').addEventListener('click', e => {
+  const btn = e.target.closest('.sound-btn');
+  if (!btn) return;
+  document.querySelectorAll('.sound-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+});
+
+document.getElementById('btn-settings-save').addEventListener('click', () => {
+  CONFIG.sets = parseInt(document.getElementById('s-sets').value) || 2;
+  CONFIG.roundsPerSet = parseInt(document.getElementById('s-rounds').value) || 4;
+  CONFIG.shortTransSec = parseInt(document.getElementById('s-trans').value) || 30;
+  CONFIG.discussSec = parseInt(document.getElementById('s-discuss').value) || 120;
+  CONFIG.writeSec = parseInt(document.getElementById('s-write').value) || 120;
+  CONFIG.longBreakSec = parseInt(document.getElementById('s-long').value) || 90;
+  const selectedTheme = document.querySelector('.sound-btn.selected');
+  CONFIG.soundTheme = selectedTheme ? selectedTheme.dataset.theme : 'beep';
+  document.getElementById('settings-panel').style.display = 'none';
+  resetAll();
+});
+
+// ── DONE ─────────────────────────────────────────────────────────────────────
+function showDone() {
+  clearInterval(ticker);
+  running = false;
+  playDone();
+  document.getElementById('done-screen').style.display = 'flex';
+  document.getElementById('btn-start').style.display = '';
+  document.getElementById('btn-pause').style.display = 'none';
+}
+
+// ── RESET ─────────────────────────────────────────────────────────────────────
+function resetAll() {
+  clearInterval(ticker);
+  running = false;
+  waitingAfterBreak = false;
+  phaseIdx = 0;
+  buildPhases();
+  buildRoundsRow();
+  buildSequenceStrip();
+  timeLeft = phases[0]?.duration || CONFIG.discussSec;
+  document.getElementById('phase-label').textContent = 'Ready';
+  document.getElementById('countdown').textContent = formatTime(timeLeft);
+  document.getElementById('sub-label').textContent = 'Press Start';
+  setRingProgress(1, phases[0]?.color || 'var(--red)');
+  updateDots();
+  updateSequenceStrip();
+  document.getElementById('btn-start').style.display = '';
+  document.getElementById('btn-pause').style.display = 'none';
+  document.getElementById('done-screen').style.display = 'none';
+}
+
+// ── KEYBOARD SHORTCUTS ────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (document.getElementById('settings-panel').style.display === 'flex') return;
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (running) document.getElementById('btn-pause').click();
+    else document.getElementById('btn-start').click();
+  }
+  if (e.code === 'ArrowRight') document.getElementById('btn-skip').click();
+  if (e.code === 'KeyR') document.getElementById('btn-reset').click();
+});
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+resetAll();
+</script>
+</body>
+</html>
